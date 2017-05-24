@@ -4,13 +4,17 @@
 
 // TBD: `shrink', macros
 
+// `size' must be adequately large to fit deque
+// when `front' == `back' deque is assumed full
 static void resize(deque_t *deque, size_t size)
 {
 	char *begin = malloc(size);
 	char *back = begin;
 	size_t count;
 
-	if (deque->front < deque->back) {
+	if (deque->begin == NULL) {
+		;
+	} else if (deque->front < deque->back) {
 		count = deque->back - deque->front;
 		memcpy(back, deque->front, count);
 		back += count;
@@ -23,12 +27,15 @@ static void resize(deque_t *deque, size_t size)
 		back += count;
 	}
 
+	free(deque->begin);
 	deque->begin = begin;
 	deque->end = begin + size;
 	deque->front = begin;
 	deque->back = back;
 }
 
+// deque must either have available space or be default
+// when `front' == `back' deque is assumed empty
 void push(deque_t *deque, void *src, size_t size)
 {
 	if (deque->begin == NULL)
@@ -44,6 +51,8 @@ void push(deque_t *deque, void *src, size_t size)
 		resize(deque, 2 * (deque->end - deque->begin));
 }
 
+// deque must either have available space or be default
+// when `front' == `back' deque is assumed empty
 void pushleft(deque_t *deque, void *src, size_t size)
 {
 	if (deque->begin == NULL)
@@ -59,6 +68,8 @@ void pushleft(deque_t *deque, void *src, size_t size)
 		resize(deque, 2 * (deque->end - deque->begin));
 }
 
+// returns zero on success, fails when deque is empty
+// when `front' == `back' deque is assumed empty
 int pop(deque_t *deque, void *dest, size_t size)
 {
 	if (deque->front == deque->back)
@@ -73,6 +84,8 @@ int pop(deque_t *deque, void *dest, size_t size)
 	return 0;
 }
 
+// returns zero on success, fails when deque is empty
+// when `front' == `back' deque is assumed empty
 int popleft(deque_t *deque, void *dest, size_t size)
 {
 	if (deque->front == deque->back)
@@ -86,6 +99,8 @@ int popleft(deque_t *deque, void *dest, size_t size)
 
 	return 0;
 }
+
+/* Unit test */
 
 #if 0
 #include <stdio.h>
