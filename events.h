@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 typedef enum {
-	// EV_NONE,
+	EV_NONE,
 	EV_PROCESS_BEGIN,
 	EV_PROCESS_END,
 	EV_IO_BEGIN,
