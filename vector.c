@@ -10,6 +10,7 @@ typedef struct {
 #define HEADER_SIZE ((sizeof (vector_t) + 15) & -16)
 #define HEADER(vec) ((vector_t *)((char *)(vec) - HEADER_SIZE))
 
+// `capacity' must be adequately large to fit vector
 static void *vec_resize(void *vec_, size_t capacity)
 {
 	char *vec = vec_;
@@ -39,6 +40,7 @@ size_t vec_length_(void *vec, size_t size)
 	return header->used / size;
 }
 
+// vector must either have available space or be NULL
 void vec_append_(void *vecp_, void *src, size_t size)
 {
 	char **vecp = (char **)vecp_;
@@ -57,6 +59,7 @@ void vec_append_(void *vecp_, void *src, size_t size)
 	}
 }
 
+// `idx' must be a valid index
 void vec_remove_(void *vec_, size_t idx, size_t size)
 {
 	char *vec = vec_;

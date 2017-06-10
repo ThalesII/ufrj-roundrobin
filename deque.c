@@ -2,7 +2,7 @@
 #include <string.h>
 #include "deque.h"
 
-// TBD: `shrink', macros
+// TBD: `shrink'
 
 // `size' must be adequately large to fit deque
 // when `front' == `back' deque is assumed full
@@ -36,7 +36,7 @@ static void deq_resize(deque_t *deque, size_t size)
 
 // deque must either have available space or be default
 // when `front' == `back' deque is assumed empty
-void vec_push(deque_t *deque, void *src, size_t size)
+void deq_push_(deque_t *deque, void *src, size_t size)
 {
 	if (deque->begin == NULL)
 		deq_resize(deque, size); // k * size
@@ -53,7 +53,7 @@ void vec_push(deque_t *deque, void *src, size_t size)
 
 // deque must either have available space or be default
 // when `front' == `back' deque is assumed empty
-void deq_pushleft(deque_t *deque, void *src, size_t size)
+void deq_pushleft_(deque_t *deque, void *src, size_t size)
 {
 	if (deque->begin == NULL)
 		deq_resize(deque, size);
@@ -70,7 +70,7 @@ void deq_pushleft(deque_t *deque, void *src, size_t size)
 
 // returns zero on success, fails when deque is empty
 // when `front' == `back' deque is assumed empty
-int deq_pop(deque_t *deque, void *dest, size_t size)
+int deq_pop_(deque_t *deque, void *dest, size_t size)
 {
 	if (deque->front == deque->back)
 		return 1;
@@ -86,7 +86,7 @@ int deq_pop(deque_t *deque, void *dest, size_t size)
 
 // returns zero on success, fails when deque is empty
 // when `front' == `back' deque is assumed empty
-int deq_popleft(deque_t *deque, void *dest, size_t size)
+int deq_popleft_(deque_t *deque, void *dest, size_t size)
 {
 	if (deque->front == deque->back)
 		return 1;
@@ -114,11 +114,11 @@ int main(void)
 	srand(time(NULL));
 	for (int i = 0; i < 9999; ++i) {
 		if (count == 0 || rand() & 1) {
-			deq_pushleft(&deque, &count, sizeof(count));
+			deq_pushleft(&deque, &count);
 			count++;
 		} else {
-			// deq_popleft(&deque, &value, sizeof(value));
-			deq_pop(&deque, &value, sizeof(value));
+			// deq_popleft(&deque, &value);
+			deq_pop(&deque, &value);
 			count--;
 			printf("%i\n", value);
 		}

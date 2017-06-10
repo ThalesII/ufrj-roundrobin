@@ -1,6 +1,14 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
+/* Usage example:
+ *     float *vec = NULL;
+ *     float val = 10.0f;
+ *     vec_append(&vec, &val);
+ *     vec_remove(vec, 0);
+ *     vec_free(vec);
+ */
+
 #define vec_length(vec) vec_length_(vec, sizeof *(vec))
 #define vec_append(vecp, src) vec_append_(vecp, src, sizeof **(vecp))
 #define vec_remove(vec, idx) vec_remove_(vec, idx, sizeof *(vec))
