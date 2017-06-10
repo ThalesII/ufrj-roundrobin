@@ -13,8 +13,8 @@ typedef struct {
 } proc_t;
 
 int curr_time = 0;
-int running = -1;
-int interrupt = -1;
+int running = -1; // Running process pid
+int interrupt = -1; // Interrupt time
 proc_t procs[MAX_PROCS];
 size_t proc_count = 0;
 event_t events[MAX_EVENTS];
@@ -159,7 +159,8 @@ int main(void)
 
 		for (int i=0; i < count; ++i)
 			io[i] = (io_t) { IO_A, rand() % duration };
-		pids[i] = create_proc(begin, duration, io, count);
+		create_proc(begin, duration, io, count);
+		pids[i] = -1;
 		printf("P%d\t%d\t%d\t", pids[i], begin, duration);
 		char *prefix = "";
 		for (int i=0; i < count; ++i) {
@@ -183,6 +184,7 @@ int main(void)
 				break;
 			case EV_PROCESS_BEGIN:
 				printf(": P%d BEGUN (T=%d)\n", evt->pid, evt->time);
+				pids[evt->pid] = evt->pid;
 				if (run == -1) {
 					run = evt->pid;
 					set_running(evt->pid);
