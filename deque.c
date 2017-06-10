@@ -6,7 +6,7 @@
 
 // `size' must be adequately large to fit deque
 // when `front' == `back' deque is assumed full
-static void resize(deque_t *deque, size_t size)
+static void deq_resize(deque_t *deque, size_t size)
 {
 	char *begin = malloc(size);
 	char *back = begin;
@@ -36,10 +36,10 @@ static void resize(deque_t *deque, size_t size)
 
 // deque must either have available space or be default
 // when `front' == `back' deque is assumed empty
-void push(deque_t *deque, void *src, size_t size)
+void vec_push(deque_t *deque, void *src, size_t size)
 {
 	if (deque->begin == NULL)
-		resize(deque, size); // k * size
+		deq_resize(deque, size); // k * size
 
 	memcpy(deque->back, src, size);
 	deque->back += size;
@@ -48,15 +48,15 @@ void push(deque_t *deque, void *src, size_t size)
 		deque->back = deque->begin;
 
 	if (deque->front == deque->back)
-		resize(deque, 2 * (deque->end - deque->begin));
+		deq_resize(deque, 2 * (deque->end - deque->begin));
 }
 
 // deque must either have available space or be default
 // when `front' == `back' deque is assumed empty
-void pushleft(deque_t *deque, void *src, size_t size)
+void deq_pushleft(deque_t *deque, void *src, size_t size)
 {
 	if (deque->begin == NULL)
-		resize(deque, size);
+		deq_resize(deque, size);
 
 	if (deque->front == deque->begin)
 		deque->front = deque->end;
@@ -65,12 +65,12 @@ void pushleft(deque_t *deque, void *src, size_t size)
 	memcpy(deque->front, src, size);
 
 	if (deque->front == deque->back)
-		resize(deque, 2 * (deque->end - deque->begin));
+		deq_resize(deque, 2 * (deque->end - deque->begin));
 }
 
 // returns zero on success, fails when deque is empty
 // when `front' == `back' deque is assumed empty
-int pop(deque_t *deque, void *dest, size_t size)
+int deq_pop(deque_t *deque, void *dest, size_t size)
 {
 	if (deque->front == deque->back)
 		return 1;
@@ -86,7 +86,7 @@ int pop(deque_t *deque, void *dest, size_t size)
 
 // returns zero on success, fails when deque is empty
 // when `front' == `back' deque is assumed empty
-int popleft(deque_t *deque, void *dest, size_t size)
+int deq_popleft(deque_t *deque, void *dest, size_t size)
 {
 	if (deque->front == deque->back)
 		return 1;
@@ -114,11 +114,11 @@ int main(void)
 	srand(time(NULL));
 	for (int i = 0; i < 9999; ++i) {
 		if (count == 0 || rand() & 1) {
-			pushleft(&deque, &count, sizeof(count));
+			deq_pushleft(&deque, &count, sizeof(count));
 			count++;
 		} else {
-			// popleft(&deque, &value, sizeof(value));
-			pop(&deque, &value, sizeof(value));
+			// deq_popleft(&deque, &value, sizeof(value));
+			deq_pop(&deque, &value, sizeof(value));
 			count--;
 			printf("%i\n", value);
 		}

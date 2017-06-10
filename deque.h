@@ -11,12 +11,12 @@ typedef struct {
 	char *back;
 } deque_t;
 
-void push(deque_t *deque, void *src, size_t size);
+void deq_push(deque_t *deque, void *src, size_t size);
 
-void pushleft(deque_t *deque, void *src, size_t size);
+void deq_pushleft(deque_t *deque, void *src, size_t size);
 
-int pop(deque_t *deque, void *dest, size_t size);
+int deq_pop(deque_t *deque, void *dest, size_t size);
 
-int popleft(deque_t *deque, void *dest, size_t size);
+int deq_popleft(deque_t *deque, void *dest, size_t size);
 
 #endif

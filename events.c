@@ -19,20 +19,20 @@ int create_proc(int begin, int duration, io_t *io, size_t count)
 {
 	assert(begin >= g_time);
 	event_t *events = NULL;
-	int pid = length(g_procs);
+	int pid = vec_length(g_procs);
 
 	event_t begin_event = { EV_PROCESS_BEGIN, pid, begin };
-	append(&g_events, &begin_event);
+	vec_append(&g_events, &begin_event);
 
 	for (int i = 0; i < count; ++i) {
 		event_t io_event = { EV_IO_BEGIN, pid, io[i].begin, io_duration[io[i].type] };
-		append(&events, &io_event);
+		vec_append(&events, &io_event);
 	}
 
 	event_t end_event = { EV_PROCESS_END, pid, duration };
-	append(&events, &end_event);
+	vec_append(&events, &end_event);
 	proc_t proc = { 0, events };
-	append(&g_procs, &proc);
+	vec_append(&g_procs, &proc);
 
 	return pid;
 }
@@ -63,13 +63,13 @@ event_t *next_events(void)
 		next_time = g_interrupt;
 	}
 
-	for (int i=0; i < length(g_events); ++i) {
+	for (int i=0; i < vec_length(g_events); ++i) {
 		if (g_events[i].time < next_time) {
 			next_time = g_events[i].time;
 		}
 	}
 
-	for (int i=0; proc && i < length(proc->events); ++i) {
+	for (int i=0; proc && i < vec_length(proc->events); ++i) {
 		int event_time = g_time + proc->events[i].time - proc->time;
 		if (event_time < next_time) {
 			next_time = event_time;
@@ -82,20 +82,20 @@ event_t *next_events(void)
 
 	if (g_interrupt == next_time) {
 		event_t int_event = { EV_INTERRUPT, g_running };
-		append(&events, &int_event);
+		vec_append(&events, &int_event);
 	}
 
-	for (int i=0; i < length(g_events);) {
+	for (int i=0; i < vec_length(g_events);) {
 		if (g_events[i].time != next_time) {
 			i++;
 			continue;
 		}
 
-		append(&events, &g_events[i]);
-		remove_at(g_events, i);
+		vec_append(&events, &g_events[i]);
+		vec_remove(g_events, i);
 	}
 
-	for (int i=0; proc && i < length(proc->events);) {
+	for (int i=0; proc && i < vec_length(proc->events);) {
 		int event_time = g_time + proc->events[i].time - proc->time;
 
 		if (event_time != next_time) {
@@ -105,18 +105,19 @@ event_t *next_events(void)
 
 		if (proc->events[i].type == EV_IO_BEGIN) {
 			event_t io_event = { EV_IO_END, g_running, next_time + proc->events[i].duration };
-			append(&g_events, &io_event);
+			vec_append(&g_events, &io_event);
 		}
 
 		event_t proc_event = { proc->events[i].type, proc->events[i].pid, event_time };
-		append(&events, &proc_event);
-		remove_at(proc->events, i);
+		vec_append(&events, &proc_event);
+		vec_remove(proc->events, i);
 	}
 
 	// If there are no events, return `EV_NONE'
-	if (length(events) == 0) {
+	if (vec_length(events) == 0) {
 		event_t none_event = { EV_NONE, -1, g_time };
-		append(&events, &none_event);
+		vec_append(&events, &none_event);
+		next_time = g_time;
 	}
 
 	int delta_time = next_time - g_time;
@@ -127,7 +128,7 @@ event_t *next_events(void)
 
 // Unit test
 
-#if 1
+#if 0
 #include <stdio.h>
 #include <time.h>
 
@@ -149,16 +150,16 @@ int main(void)
 			}
 
 			io_t new_io = { IO_A, i };
-			append(&io, &new_io);
+			vec_append(&io, &new_io);
 		}
 
-		int pid = create_proc(begin, duration, io, length(io));
+		int pid = create_proc(begin, duration, io, vec_length(io));
 		printf("P%d\t%d\t%d\t", pid, begin, duration);
 		int tmp = -1;
-		append(&pids, &tmp);
+		vec_append(&pids, &tmp);
 
 		char *prefix = "";
-		for (int i=0; i < length(io); ++i) {
+		for (int i=0; i < vec_length(io); ++i) {
 			printf("%sA%d", prefix, io[i].begin);
 			prefix = ", ";
 		}
@@ -172,7 +173,7 @@ int main(void)
 	while (!quit) {
 		event_t *events = next_events();
 
-		for (int i=0; i < length(events); ++i) {
+		for (int i=0; i < vec_length(events); ++i) {
 			event_t *event = &events[i];
 			switch (event->type) {
 			case EV_NONE:

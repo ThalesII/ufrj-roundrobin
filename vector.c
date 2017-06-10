@@ -10,7 +10,7 @@ typedef struct {
 #define HEADER_SIZE ((sizeof (vector_t) + 15) & -16)
 #define HEADER(vec) ((vector_t *)((char *)(vec) - HEADER_SIZE))
 
-static void *resize(void *vec_, size_t capacity)
+static void *vec_resize(void *vec_, size_t capacity)
 {
 	char *vec = vec_;
 	vector_t *new_header = malloc(HEADER_SIZE + capacity);
@@ -29,7 +29,7 @@ static void *resize(void *vec_, size_t capacity)
 	return new_vec;
 }
 
-size_t length_(void *vec, size_t size)
+size_t vec_length_(void *vec, size_t size)
 {
 	if (vec == NULL) {
 		return 0;
@@ -39,12 +39,12 @@ size_t length_(void *vec, size_t size)
 	return header->used / size;
 }
 
-void append_(void *vecp_, void *src, size_t size)
+void vec_append_(void *vecp_, void *src, size_t size)
 {
 	char **vecp = (char **)vecp_;
 
 	if (*vecp == NULL) {
-		*vecp = resize(*vecp, 16 * size);
+		*vecp = vec_resize(*vecp, 16 * size);
 	}
 
 	char *vec = *vecp;
@@ -53,11 +53,11 @@ void append_(void *vecp_, void *src, size_t size)
 	header->used += size;
 	
 	if (header->used == header->capacity) {
-		*vecp = resize(*vecp, 2 * header->capacity);
+		*vecp = vec_resize(*vecp, 2 * header->capacity);
 	}
 }
 
-void remove_at_(void *vec_, size_t idx, size_t size)
+void vec_remove_(void *vec_, size_t idx, size_t size)
 {
 	char *vec = vec_;
 	vector_t *header = HEADER(vec);
@@ -86,19 +86,20 @@ int main(void)
 	int *vec = NULL;
 
 	for (int i=0; i < 999; ++i) {
-		append(&vec, &i);
+		vec_append(&vec, &i);
 	}
-	//printf("length(vec) = %zu\n", length_(vec, sizeof (int)));
+	//printf("vec_length(vec) = %zu\n", vec_length_(vec, sizeof (int)));
 	
-	for (int i=0; i < length(vec); i += 2) {
-		remove_at(vec, i);
+	for (int i=0; i < vec_length(vec); i += 2) {
+		vec_remove(vec, i);
 	}
-	printf("length(vec) = %zu\n", length_(vec, sizeof (int)));
+	printf("vec_length(vec) = %zu\n", vec_length_(vec, sizeof (int)));
 
-	for (int i=0; i < length(vec); ++i) {
+	for (int i=0; i < vec_length(vec); ++i) {
 		printf("vec[%d] = %d\n", i, vec[i]);
 	}
 
+	vec_free(vec);
 	return 0;
 }
 #endif
