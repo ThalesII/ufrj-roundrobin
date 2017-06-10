@@ -8,13 +8,13 @@ typedef struct {
 } vector_t;
 
 #define HEADER_SIZE ((sizeof (vector_t) + 15) & -16)
-#define HEADER(vec) ((vector_t *)((char *)vec - HEADER_SIZE))
+#define HEADER(vec) ((vector_t *)((char *)(vec) - HEADER_SIZE))
 
 static void *resize(void *vec_, size_t capacity)
 {
 	char *vec = vec_;
-	char *new_vec = malloc(HEADER_SIZE + capacity);
-	vector_t *new_header = HEADER(new_vec);
+	vector_t *new_header = malloc(HEADER_SIZE + capacity);
+	char *new_vec = (char *)new_header + HEADER_SIZE; 
 
 	new_header->used = 0;
 	new_header->capacity = capacity;
@@ -25,6 +25,7 @@ static void *resize(void *vec_, size_t capacity)
 		new_header->used = header->used;
 	}
 
+	vec_free(vec);
 	return new_vec;
 }
 
@@ -63,6 +64,16 @@ void remove_at_(void *vec_, size_t idx, size_t size)
 
 	header->used -= size;
 	memcpy(vec + idx * size, vec + header->used, size);
+}
+
+void vec_free(void *vec)
+{
+	if (vec == NULL) {
+		return;
+	}
+
+	vector_t *header = HEADER(vec);
+	free(header);
 }
 
 // Unit test

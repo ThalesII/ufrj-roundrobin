@@ -43,6 +43,6 @@ void set_running(int pid);
 
 void set_interrupt(int time);
 
-size_t next_events(event_t *dest, size_t count);
+event_t *next_events(void);
 
 #endif

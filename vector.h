@@ -11,4 +11,6 @@ void append_(void *vecp, void *src, size_t size);
 
 void remove_at_(void *vec, size_t idx, size_t size);
 
+void vec_free(void *vec);
+
 #endif

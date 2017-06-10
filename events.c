@@ -1,199 +1,196 @@
-#define MAX_EVENTS 1024
-#define MAX_PROCS 1024
-
 #include <stdlib.h>
 #include <limits.h>
 #include <assert.h>
 #include "events.h"
+#include "vector.h"
 
 typedef struct {
 	int time;
 	event_t *events;
-	size_t count;
 } proc_t;
 
-int curr_time = 0;
-int running = -1; // Running process pid
-int interrupt = -1; // Interrupt time
-proc_t procs[MAX_PROCS];
-size_t proc_count = 0;
-event_t events[MAX_EVENTS];
-size_t event_count = 0;
+int      g_time      = 0;
+int      g_running   = -1; // Running process pid
+int      g_interrupt = -1; // Interrupt time
+proc_t  *g_procs     = NULL;
+event_t *g_events    = NULL;
 
 int create_proc(int begin, int duration, io_t *io, size_t count)
 {
-	assert(proc_count < MAX_PROCS - 1);
-	assert(event_count < MAX_EVENTS - 1);
-	assert(begin >= curr_time);
-	event_t *proc_events = malloc((count+1) * sizeof(*proc_events));
-	int pid = event_count;
+	assert(begin >= g_time);
+	event_t *events = NULL;
+	int pid = length(g_procs);
 
-	events[event_count++] = (event_t) { EV_PROCESS_BEGIN, pid, begin };
+	event_t begin_event = { EV_PROCESS_BEGIN, pid, begin };
+	append(&g_events, &begin_event);
 
 	for (int i = 0; i < count; ++i) {
-		proc_events[i] = (event_t) {
-			EV_IO_BEGIN,
-			pid,
-			io[i].begin,
-			io_duration[io[i].type]
-		};
+		event_t io_event = { EV_IO_BEGIN, pid, io[i].begin, io_duration[io[i].type] };
+		append(&events, &io_event);
 	}
-	proc_events[count] = (event_t) { EV_PROCESS_END, pid, duration };
 
-	procs[proc_count++] = (proc_t) { 0, proc_events, count+1 };
+	event_t end_event = { EV_PROCESS_END, pid, duration };
+	append(&events, &end_event);
+	proc_t proc = { 0, events };
+	append(&g_procs, &proc);
 
 	return pid;
 }
 
 void set_running(int pid)
 {
-	running = pid;
+	g_running = pid;
 }
 
 void set_interrupt(int time)
 {
-	interrupt = time;
+	g_interrupt = time;
 }
 
-size_t next_events(event_t *dest, size_t count)
+event_t *next_events(void)
 {
+	event_t *events = NULL;
 	int next_time = INT_MAX;
-	size_t num = 0;
-	proc_t *p = NULL;
+	proc_t *proc = NULL;
 
-	if (running != -1) {
-		p = &procs[running];
+	if (g_running != -1) {
+		proc = &g_procs[g_running];
 	}
 
 	// Find `next_time'
 
-	if (interrupt != -1) {
-		next_time = interrupt;
+	if (g_interrupt != -1) {
+		next_time = g_interrupt;
 	}
 
-	for (int i = 0; i < event_count; ++i) {
-		if (events[i].time < next_time) {
-			next_time = events[i].time;
+	for (int i=0; i < length(g_events); ++i) {
+		if (g_events[i].time < next_time) {
+			next_time = g_events[i].time;
 		}
 	}
 
-	for (int i = 0; p && i < p->count; ++i) {
-		int time = curr_time + p->events[i].time - p->time;
-		if (time < next_time) {
-			next_time = time;
+	for (int i=0; proc && i < length(proc->events); ++i) {
+		int event_time = g_time + proc->events[i].time - proc->time;
+		if (event_time < next_time) {
+			next_time = event_time;
 		}
 	}
 
-	assert(next_time >= curr_time);
+	assert(next_time >= g_time);
 
 	// Copy events
 
-	if (interrupt == next_time && num < count) {
-		dest[num++] = (event_t) { EV_INTERRUPT, running };
+	if (g_interrupt == next_time) {
+		event_t int_event = { EV_INTERRUPT, g_running };
+		append(&events, &int_event);
 	}
 
-	for (int i = 0; i < event_count; ++i) {
-		if (events[i].time == next_time) {
-			if (num < count) {
-				dest[num++] = events[i];
-			}
-			event_count--;
-			events[i] = events[event_count];
-			i--; // Tretas
+	for (int i=0; i < length(g_events);) {
+		if (g_events[i].time != next_time) {
+			i++;
+			continue;
 		}
+
+		append(&events, &g_events[i]);
+		remove_at(g_events, i);
 	}
 
-	for (int i = 0; p && i < p->count; ++i) {
-		int time = curr_time + p->events[i].time - p->time;
-		if (time == next_time) {
-			if (p->events[i].type == EV_IO_BEGIN) {
-				assert(event_count < MAX_EVENTS - 1);
-				events[event_count++] = (event_t) {
-					EV_IO_END,
-					running,
-					next_time + p->events[i].duration
-				};
-			}
-			if (num < count) {
-				dest[num++] = (event_t) { p->events[i].type, p->events[i].pid, time };
-			}
-			p->count--;
-			p->events[i] = p->events[p->count];
-			i--; // Tretas
+	for (int i=0; proc && i < length(proc->events);) {
+		int event_time = g_time + proc->events[i].time - proc->time;
+
+		if (event_time != next_time) {
+			i++;
+			continue;
 		}
+
+		if (proc->events[i].type == EV_IO_BEGIN) {
+			event_t io_event = { EV_IO_END, g_running, next_time + proc->events[i].duration };
+			append(&g_events, &io_event);
+		}
+
+		event_t proc_event = { proc->events[i].type, proc->events[i].pid, event_time };
+		append(&events, &proc_event);
+		remove_at(proc->events, i);
 	}
 
 	// If there are no events, return `EV_NONE'
-	if (next_time == INT_MAX) {
-		if (num < count) {
-			dest[num++] = (event_t) { EV_NONE, -1, curr_time };
-		}
-		return num;
+	if (length(events) == 0) {
+		event_t none_event = { EV_NONE, -1, g_time };
+		append(&events, &none_event);
 	}
 
-	if (p) {
-		p->time += next_time - curr_time;
-	}
-
-	curr_time = next_time;
-	return num;
+	int delta_time = next_time - g_time;
+	g_time += delta_time;
+	if (proc) proc->time += delta_time;
+	return events;
 }
 
 // Unit test
 
-#if 0
+#if 1
 #include <stdio.h>
+#include <time.h>
 
 int main(void)
 {
-	int pids[10];
-	io_t io[10];
-	event_t evts[10];
+	int *pids = NULL;
 	int run = -1;
 
-	printf("PROC.\tBEGIN\tDUR.\tIO\n");
-	for (int i = 0; i < 10; ++i) {
+	// srand(time(NULL));
+	printf("%% PROC.\tBEGIN\tDUR.\tIO\n");
+	for (int i=0; i < 10; ++i) {
 		int begin = rand() % 10;
 		int duration = rand() % 10 + 1;
-		int count = rand() % 3;
+		io_t *io = NULL;
 
-		for (int i=0; i < count; ++i)
-			io[i] = (io_t) { IO_A, rand() % duration };
-		create_proc(begin, duration, io, count);
-		pids[i] = -1;
-		printf("P%d\t%d\t%d\t", pids[i], begin, duration);
+		for (int i=1; i < duration; ++i) {
+			if (rand() % 3 != 0) {
+				continue;
+			}
+
+			io_t new_io = { IO_A, i };
+			append(&io, &new_io);
+		}
+
+		int pid = create_proc(begin, duration, io, length(io));
+		printf("P%d\t%d\t%d\t", pid, begin, duration);
+		int tmp = -1;
+		append(&pids, &tmp);
+
 		char *prefix = "";
-		for (int i=0; i < count; ++i) {
+		for (int i=0; i < length(io); ++i) {
 			printf("%sA%d", prefix, io[i].begin);
 			prefix = ", ";
 		}
 		printf("\n");
+
+		vec_free(io);
 	}
 	printf("\n");
 
 	int quit = 0;
 	while (!quit) {
-		int count = next_events(evts, 10);
+		event_t *events = next_events();
 
-		for (int i=0; i < count; ++i) {
-			event_t *evt = &evts[i];
-			switch (evt->type) {
+		for (int i=0; i < length(events); ++i) {
+			event_t *event = &events[i];
+			switch (event->type) {
 			case EV_NONE:
-				printf("DONE (T=%d)\n", evt->time);
+				printf("> DONE\n");
 				quit = 1;
 				break;
 			case EV_PROCESS_BEGIN:
-				printf(": P%d BEGUN (T=%d)\n", evt->pid, evt->time);
-				pids[evt->pid] = evt->pid;
+				printf(": P%d BEGUN (T=%d)\n", event->pid, event->time);
+				pids[event->pid] = event->pid;
 				if (run == -1) {
-					run = evt->pid;
-					set_running(evt->pid);
-					printf("> RUN P%d\n", evt->pid);
+					run = event->pid;
+					set_running(event->pid);
+					printf("> RUN P%d\n", event->pid);
 				}
 				break;
 			case EV_PROCESS_END:
-				printf(": P%d ENDED (T=%d)\n", evt->pid, evt->time);
-				pids[evt->pid] = -1;
+				printf(": P%d ENDED (T=%d)\n", event->pid, event->time);
+				pids[event->pid] = -1;
 				run = -1;
 				for (int i=0; i < 10; ++i)
 					if (pids[i] >= 0) run = pids[i];
@@ -201,8 +198,8 @@ int main(void)
 				printf("> RUN P%d\n", run);
 				break;
 			case EV_IO_BEGIN:
-				printf(": P%d BEGUN IO (T=%d)\n", evt->pid, evt->time);
-				pids[evt->pid] = -evts->pid;
+				printf(": P%d BEGUN IO (T=%d)\n", event->pid, event->time);
+				pids[event->pid] = -event->pid;
 				run = -1;
 				for (int i=0; i < 10; ++i)
 					if (pids[i] >= 0) run = pids[i];
@@ -210,16 +207,18 @@ int main(void)
 				printf("> RUN P%d\n", run);
 				break;
 			case EV_IO_END:
-				printf(": P%d ENDED IO (T=%d)\n", evt->pid, evt->time);
-				pids[evt->pid] = evts->pid;
+				printf(": P%d ENDED IO (T=%d)\n", event->pid, event->time);
+				pids[event->pid] = event->pid;
 				break;
 			case EV_INTERRUPT:
-				printf(": P%d INTERRUPTED (T=%d)\n", evt->pid, evt->time);
+				printf(": P%d INTERRUPTED (T=%d)\n", event->pid, event->time);
 				break;
 			default:
 				printf("???\n");
 			}
 		}
+
+		vec_free(events);
 	}
 
 	return 0;
