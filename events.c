@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "events.h"
 #include "vector.h"
+#include "parser.h"
 
 typedef struct {
 	int time;
@@ -128,7 +129,7 @@ event_t *next_events(void)
 
 // Unit test
 
-#if 0
+#if 1
 #include <stdio.h>
 #include <time.h>
 
@@ -136,20 +137,18 @@ int main(void)
 {
 	int *pids = NULL;
 	int run = -1;
+	int **process;
 
 	// srand(time(NULL));
 	printf("%% PROC.\tBEGIN\tDUR.\tIO\n");
-	for (int i=0; i < 10; ++i) {
-		int begin = rand() % 10;
-		int duration = rand() % 10 + 1;
+	process = getprocess("test.in");
+	for (int i=0; i<vec_length(process); i++){
+		int begin = process[i][1];
+		int duration = process[i][2];
 		io_t *io = NULL;
 
-		for (int i=1; i < duration; ++i) {
-			if (rand() % 3 != 0) {
-				continue;
-			}
-
-			io_t new_io = { IO_A, i };
+		for (int j=3; j < vec_length(process[i]); j+=2) {
+			io_t new_io = { process[i][j], process[i][j+1] };
 			vec_append(&io, &new_io);
 		}
 
