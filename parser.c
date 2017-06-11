@@ -5,13 +5,14 @@
 #include "events.h"
 
 //Vector of file states
-FILE **files = NULL;
-char **lines = NULL;
-size_t *lens = NULL;
-int *ids = NULL;
+FILE **files;
+char **lines;
+size_t *lens;
+int *ids;
 
 //Open a file and append it on vector files
-void load_file(char *arq_name){
+void load_file(char *arq_name)
+{
     FILE *fp = fopen(arq_name, "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
@@ -27,7 +28,8 @@ void load_file(char *arq_name){
 }
 
 //Close file and free all vectors
-void close_files(){
+void close_files()
+{
     for(int i=0; i<vec_length(files); i++){
         fclose(files[i]);
     }
@@ -95,13 +97,12 @@ int parse_line(int id)
         vec_append(&io, &new_io);
     }
 
-    for (int i=0; i < vec_length(vec); ++i) {
-        printf("%d ", vec[i]);
-    }
-    puts("");
+    // for (int i=0; i < vec_length(vec); ++i) {
+    //     printf("%d ", vec[i]);
+    // }
+    // puts("");
 
-    // return create_proc(name, priority, begin, duration, io);
-    return create_proc(begin, duration, io, vec_length(io));
+    return create_proc(name, priority, begin, duration, io);
 }
 
 // Unit test
@@ -113,18 +114,20 @@ int main(void)
     load_file("test.in");
 
     //Parser on first file
-    puts("Pid of processes on first file:");
+    puts("Pids of processes on first file:");
     do{
         pid = parse_line(0);
+        printf("%d\n", pid);
     }while(pid != -1);
     puts("");
     
     close_files();
     load_file("test2.in");
     //Parser on second file
-    puts("Pid of processes on second file:");
+    puts("Pids of processes on second file:");
     do{
         pid = parse_line(0);
+        printf("%d\n", pid);
     }while(pid != -1);
     puts("");
 

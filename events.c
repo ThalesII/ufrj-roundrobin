@@ -3,7 +3,6 @@
 #include <assert.h>
 #include "events.h"
 #include "vector.h"
-#include "parser.h"
 
 typedef struct {
 	int time;
@@ -152,11 +151,11 @@ proc_info_t get_info(int pid)
 
 void init_test(void){
 	io_t *io = NULL;
-	int pid1 = create_proc(0, 5, io, vec_length(io));
-	int pid2 = create_proc(0, 4, io, vec_length(io));
+	create_proc("P1", 0, 0, 5, io);
+	create_proc("P2", 0, 0, 4, io);
 	io_t new_io = { IO_A, 2 };
 	vec_append(&io, &new_io);
-	int pid3 = create_proc(1, 4, io, vec_length(io));
+	create_proc("P3", 0, 1, 4, io);
 }
 
 // Unit test

@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
-int **getprocess(char *arq_name);
+void load_file(char *arq_name);
+void close_files();
+int parse_line(int id);
 
 #endif
