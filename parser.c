@@ -4,10 +4,47 @@
 #include "vector.h"
 #include "events.h"
 
-int parse_line(FILE **fp, char **line, size_t *len)
+//Vector of file states
+FILE **files = NULL;
+char **lines = NULL;
+size_t *lens = NULL;
+int *ids = NULL;
+
+//Open a file and append it on vector files
+void load_file(char *arq_name){
+    FILE *fp = fopen(arq_name, "r");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+    vec_append(&files, &fp);
+
+    char * line = NULL;
+    size_t len = 0;
+    int id = vec_length(files) - 1;
+
+    vec_append(&lines, &line);
+    vec_append(&lens, &len);
+    vec_append(&ids, &id);
+}
+
+//Close file and free all vectors
+void close_files(){
+    for(int i=0; i<vec_length(files); i++){
+        fclose(files[i]);
+    }
+    vec_free(files);
+    vec_free(lines);
+    vec_free(lens);
+    vec_free(ids);
+}
+
+int parse_line(int id)
 {
     char *token;
     const char s[1] = " ";
+
+    FILE  **fp = &files[id];
+    char  **line = &lines[id];
+    size_t *len = &lens[id];
 
    	int *vec = NULL;
 
@@ -38,11 +75,10 @@ int parse_line(FILE **fp, char **line, size_t *len)
 
     		token = strtok(NULL, s);
     	}
-    }
-
-    if(vec == NULL){
+    }else{
         return -1;
     }
+
     int begin = vec[1];
     int duration = vec[2];
     io_t *io = NULL;
@@ -60,22 +96,25 @@ int parse_line(FILE **fp, char **line, size_t *len)
 int main(void)
 {
     int pid;
-    FILE *fp;
-    char * line = NULL;
-    size_t len = 0;
-    
+    load_file("test.in");
+    load_file("test2.in");
 
-    fp = fopen("test.in", "r");
-    if (fp == NULL)
-            exit(EXIT_FAILURE);
-    
-    do
-    {
-        pid = parse_line(&fp, &line, &len);
-        printf("%d\n", pid);
+    //Parser on first file
+    puts("Pid of processes on first file:");
+    do{
+        pid = parse_line(0);
+        printf("%d ", pid);
     }while(pid != -1);
+    puts("");
+    //Parser on second file
+    puts("Pid of processes on second file:");
+    do{
+        pid = parse_line(1);
+        printf("%d ", pid);
+    }while(pid != -1);
+    puts("");
 
-    fclose(fp);
+    close_files();
 
 
 	return 0;
