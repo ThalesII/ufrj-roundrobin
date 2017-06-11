@@ -36,7 +36,7 @@ typedef struct {
 
 int get_duration(io_e type);
 
-int create_proc(char *name, int priority, int begin, int duration, io_t *io)
+int create_proc(char *name, int priority, int begin, int duration, io_t *io);
 
 int get_running(void);
 
