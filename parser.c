@@ -56,7 +56,7 @@ int *getprocess(FILE **fp, char **line, size_t *len)
 
 // Unit test
 
-#if 1
+#if 0
 int main(void)
 {
     int pid;
