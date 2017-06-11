@@ -31,6 +31,9 @@ typedef struct {
 
 extern int io_duration[];
 
+extern int g_time;
+extern int g_running;
+
 int create_proc(int begin,
                 int duration,
                 io_t *io,
@@ -41,5 +44,7 @@ void set_running(int pid);
 void set_interrupt(int time);
 
 event_t *next_events(void);
+
+void init_test(void);
 
 #endif

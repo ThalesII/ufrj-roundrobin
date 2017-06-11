@@ -132,9 +132,18 @@ event_t *next_events(void)
 	return events;
 }
 
+void init_test(void){
+	io_t *io = NULL;
+	int pid1 = create_proc(0, 5, io, vec_length(io));
+	int pid2 = create_proc(0, 4, io, vec_length(io));
+	io_t new_io = { IO_A, 2 };
+	vec_append(&io, &new_io);
+	int pid3 = create_proc(1, 4, io, vec_length(io));
+}
+
 // Unit test
 
-#if 1
+#if 0
 #include <stdio.h>
 #include <time.h>
 
