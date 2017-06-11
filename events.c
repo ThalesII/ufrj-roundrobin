@@ -43,6 +43,11 @@ int create_proc(int begin, int duration, io_t *io, size_t count)
 	return pid;
 }
 
+int get_running(void)
+{
+	return g_running;
+}
+
 void set_running(int pid)
 {
 	g_running = pid;
@@ -89,6 +94,7 @@ event_t *next_events(void)
 	if (g_interrupt == next_time) {
 		event_t int_event = { EV_INTERRUPT, g_running };
 		vec_append(&events, &int_event);
+		g_interrupt = -1;
 	}
 
 	for (int i=0; i < vec_length(g_events);) {

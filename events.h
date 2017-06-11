@@ -31,13 +31,12 @@ typedef struct {
 
 extern int io_duration[];
 
-extern int g_time;
-extern int g_running;
-
 int create_proc(int begin,
                 int duration,
                 io_t *io,
                 size_t count);
+
+int get_running(void);
 
 void set_running(int pid);
 
