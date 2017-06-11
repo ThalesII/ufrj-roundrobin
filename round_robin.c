@@ -3,7 +3,7 @@
 #include "events.h"
 #include "vector.h"
 #include "round_robin.h"
-#include "deque.c"
+#include "deque.h"
 
 int interrupt_interval = 3;
 int remaining_procs = 3;

@@ -2,29 +2,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include "vector.h"
+#include "events.h"
 
-int **getprocess(char *arq_name)
+int *getprocess(FILE **fp, char **line, size_t *len)
 {
-	FILE * fp;
-    char * line = NULL;
     char *token;
     const char s[1] = " ";
-    size_t len = 0;
-    ssize_t read;
-    int **process = NULL;
 
+   	int *vec = NULL;
 
-    fp = fopen(arq_name, "r");
-    if (fp == NULL)
-        exit(EXIT_FAILURE);
-
-    while ((read = getline(&line, &len, fp)) != -1) {
-        // printf("Line size %zu :\n", read);
-    	int *vec = NULL;
+    if (getline(&(*line), &(*len), *fp) != -1) {
     	int count = 1;
 
         /* get first token */
-    	token = strtok(line, s);
+    	token = strtok(*line, s);
 
     	/* get other tokens */
     	while (token != NULL){
@@ -47,30 +38,45 @@ int **getprocess(char *arq_name)
 
     		token = strtok(NULL, s);
     	}
-
-    	vec_append(&process, &vec);
     }
 
-    fclose(fp);
+    if(vec == NULL){
+        return -1;
+    }
+    int begin = vec[1];
+    int duration = vec[2];
+    io_t *io = NULL;
+    for (int i=3; i < vec_length(vec); i+=2) {
+        io_t new_io = { vec[i], vec[i+1] };
+        vec_append(&io, &new_io);
+    }
 
-    return process;
+    return create_proc(begin, duration, io, vec_length(io));
 }
 
 // Unit test
 
-#if 0
+#if 1
 int main(void)
 {
-	int **process;
+    int pid;
+    FILE *fp;
+    char * line = NULL;
+    size_t len = 0;
+    
 
-	process = getprocess("example.in");
+    fp = fopen("test.in", "r");
+    if (fp == NULL)
+            exit(EXIT_FAILURE);
+    
+    do
+    {
+        pid = getprocess(&fp, &line, &len);
+        printf("%d\n", pid);
+    }while(pid != -1);
 
-	for(int i=0; i<vec_length(process); i++){
-		for(int j=0; j<vec_length(process[i]); j++){
-			printf("%d ", process[i][j]);
-		}
-		puts("");
-	}
+    fclose(fp);
+
 
 	return 0;
 }
