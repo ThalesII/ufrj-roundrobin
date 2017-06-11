@@ -1,14 +1,28 @@
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "vector.h"
 
 typedef struct {
 	size_t used;
 	size_t capacity;
+	long dummy;
 } vector_t;
 
 #define HEADER_SIZE ((sizeof (vector_t) + 15) & -16)
 #define HEADER(vec) ((vector_t *)((char *)(vec) - HEADER_SIZE))
+#define DUMMY 0x0c07fefe
+
+static void vec_validate(vector_t *header, size_t size)
+{
+	assert(header->used <= header->capacity);
+	assert(header->dummy == DUMMY);
+
+	if (size != 0) {
+		assert(header->used % size == 0);
+		assert(header->capacity % size == 0);
+	}
+}
 
 // `capacity' must be adequately large to fit vector
 static void *vec_resize(void *vec_, size_t capacity)
@@ -19,14 +33,20 @@ static void *vec_resize(void *vec_, size_t capacity)
 
 	new_header->used = 0;
 	new_header->capacity = capacity;
+	new_header->dummy = DUMMY;
 
 	if (vec != NULL) {
 		vector_t *header = HEADER(vec);
+
+		vec_validate(header, 0);
+		assert(new_header->capacity >= header->used);
+
 		memcpy(new_vec, vec, header->used);
 		new_header->used = header->used;
 	}
 
 	vec_free(vec);
+	vec_validate(new_header, 0);
 	return new_vec;
 }
 
@@ -37,6 +57,8 @@ size_t vec_length_(void *vec, size_t size)
 	}
 
 	vector_t *header = HEADER(vec);
+
+	vec_validate(header, size);
 	return header->used / size;
 }
 
@@ -51,6 +73,10 @@ void vec_append_(void *vecp_, void *src, size_t size)
 
 	char *vec = *vecp;
 	vector_t *header = HEADER(vec);
+
+	vec_validate(header, size);
+	assert(header->used + size <= header->capacity);
+
 	memcpy(vec + header->used, src, size);
 	header->used += size;
 	
@@ -65,6 +91,9 @@ void vec_remove_(void *vec_, size_t idx, size_t size)
 	char *vec = vec_;
 	vector_t *header = HEADER(vec);
 
+	vec_validate(header, size);
+	assert(header->used > 0);
+
 	header->used -= size;
 	memcpy(vec + idx * size, vec + header->used, size);
 }
@@ -76,6 +105,8 @@ void vec_free(void *vec)
 	}
 
 	vector_t *header = HEADER(vec);
+
+	vec_validate(header, 0);
 	free(header);
 }
 

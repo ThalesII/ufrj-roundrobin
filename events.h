@@ -29,10 +29,7 @@ typedef struct {
 	int begin;
 } io_t;
 
-int io_duration[] =  {
-	[IO_A] = 3,
-	[IO_B] = 5,
-};
+extern int io_duration[];
 
 int create_proc(int begin,
                 int duration,

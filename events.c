@@ -5,6 +5,11 @@
 #include "vector.h"
 #include "parser.h"
 
+int io_duration[] = {
+	[IO_A] = 3,
+	[IO_B] = 5,
+};
+
 typedef struct {
 	int time;
 	event_t *events;
