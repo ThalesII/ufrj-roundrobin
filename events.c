@@ -172,6 +172,7 @@ int main(void)
 		vec_free(io);
 	}
 	printf("\n");
+	vec_free(process);
 
 	int quit = 0;
 	while (!quit) {
