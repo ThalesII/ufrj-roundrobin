@@ -35,11 +35,17 @@ void close_files(){
     vec_free(lines);
     vec_free(lens);
     vec_free(ids);
+    files = NULL;
+    lines = NULL;
+    lens = NULL;
+    ids = NULL;
 }
 
 int parse_line(int id)
 {
     char *token;
+    char io_letter;
+    char *name;
     const char s[1] = " ";
 
     FILE  **fp = &files[id];
@@ -47,6 +53,7 @@ int parse_line(int id)
     size_t *len = &lens[id];
 
    	int *vec = NULL;
+    int io_number;
 
     if (getline(&(*line), &(*len), *fp) != -1) {
     	int count = 1;
@@ -58,17 +65,16 @@ int parse_line(int id)
     	while (token != NULL){
     		int c;
     		if (count == 1){
-    			c = token[1]-'0';
-    			vec_append(&vec, &c);
+    			name = token;
     		}
-    		else if(count > 3){
-    			c = token[0]-'A';
-    			vec_append(&vec, &c);
-    			c = token[1]-'0';
+    		else if(count > 4){
+                sscanf(token, "%c%d", &io_letter, &c);
+    			io_number = io_letter-'A';
+    			vec_append(&vec, &io_number);
     			vec_append(&vec, &c);
     		}
     		else{
-    			c = token[0]-'0';
+    			c = atoi(token);
     			vec_append(&vec, &c);
     		}
     		count++;
@@ -79,38 +85,46 @@ int parse_line(int id)
         return -1;
     }
 
-    int begin = vec[1];
-    int duration = vec[2];
+    int priority = vec[1];
+    int begin = vec[2];
+    int duration = vec[3];
     io_t *io = NULL;
+
     for (int i=3; i < vec_length(vec); i+=2) {
         io_t new_io = { vec[i], vec[i+1] };
         vec_append(&io, &new_io);
     }
 
+    for (int i=0; i < vec_length(vec); ++i) {
+        printf("%d ", vec[i]);
+    }
+    puts("");
+
+    // return create_proc(name, priority, begin, duration, io);
     return create_proc(begin, duration, io, vec_length(io));
 }
 
 // Unit test
 
-#if 0
+#if 1
 int main(void)
 {
     int pid;
     load_file("test.in");
-    load_file("test2.in");
 
     //Parser on first file
     puts("Pid of processes on first file:");
     do{
         pid = parse_line(0);
-        printf("%d ", pid);
     }while(pid != -1);
     puts("");
+    
+    close_files();
+    load_file("test2.in");
     //Parser on second file
     puts("Pid of processes on second file:");
     do{
-        pid = parse_line(1);
-        printf("%d ", pid);
+        pid = parse_line(0);
     }while(pid != -1);
     puts("");
 
