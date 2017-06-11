@@ -92,7 +92,7 @@ event_t *next_events(void)
 	// Copy events
 
 	if (g_interrupt == next_time) {
-		event_t int_event = { EV_INTERRUPT, g_running };
+		event_t int_event = { EV_INTERRUPT, g_running, next_time };
 		vec_append(&events, &int_event);
 		g_interrupt = -1;
 	}
