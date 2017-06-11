@@ -29,12 +29,14 @@ typedef struct {
 	int begin;
 } io_t;
 
-extern int io_duration[];
+typedef struct {
+	char *name;
+	int priority;
+} proc_info_t;
 
-int create_proc(int begin,
-                int duration,
-                io_t *io,
-                size_t count);
+int get_duration(io_e type);
+
+int create_proc(char *name, int priority, int begin, int duration, io_t *io)
 
 int get_running(void);
 
@@ -43,6 +45,8 @@ void set_running(int pid);
 void set_interrupt(int time);
 
 event_t *next_events(void);
+
+proc_info_t get_info(int pid);
 
 void init_test(void);
 

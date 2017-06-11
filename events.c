@@ -5,15 +5,16 @@
 #include "vector.h"
 #include "parser.h"
 
-int io_duration[] = {
-	[IO_A] = 3,
-	[IO_B] = 5,
-};
-
 typedef struct {
 	int time;
 	event_t *events;
+	proc_info_t info;
 } proc_t;
+
+int g_io_duration[] = {
+	[IO_A] = 3,
+	[IO_B] = 5,
+};
 
 int      g_time      = 0;
 int      g_running   = -1; // Running process pid
@@ -21,7 +22,12 @@ int      g_interrupt = -1; // Interrupt time
 proc_t  *g_procs     = NULL;
 event_t *g_events    = NULL;
 
-int create_proc(int begin, int duration, io_t *io, size_t count)
+int get_duration(io_e type)
+{
+	return g_io_duration[type];
+}
+
+int create_proc(char *name, int priority, int begin, int duration, io_t *io)
 {
 	assert(begin >= g_time);
 	event_t *events = NULL;
@@ -30,14 +36,15 @@ int create_proc(int begin, int duration, io_t *io, size_t count)
 	event_t begin_event = { EV_PROCESS_BEGIN, pid, begin };
 	vec_append(&g_events, &begin_event);
 
-	for (int i = 0; i < count; ++i) {
-		event_t io_event = { EV_IO_BEGIN, pid, io[i].begin, io_duration[io[i].type] };
+	for (int i = 0; i < vec_length(io); ++i) {
+		int io_duration = get_duration(io[i].type);
+		event_t io_event = { EV_IO_BEGIN, pid, io[i].begin, io_duration };
 		vec_append(&events, &io_event);
 	}
 
 	event_t end_event = { EV_PROCESS_END, pid, duration };
 	vec_append(&events, &end_event);
-	proc_t proc = { 0, events };
+	proc_t proc = { 0, events, { name, priority } };
 	vec_append(&g_procs, &proc);
 
 	return pid;
@@ -136,6 +143,11 @@ event_t *next_events(void)
 	g_time += delta_time;
 	if (proc) proc->time += delta_time;
 	return events;
+}
+
+proc_info_t get_info(int pid)
+{
+	return g_procs[pid].info;
 }
 
 void init_test(void){

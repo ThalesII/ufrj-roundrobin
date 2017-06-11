@@ -106,7 +106,7 @@ int parse_line(int id)
 
 // Unit test
 
-#if 1
+#if 0
 int main(void)
 {
     int pid;
