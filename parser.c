@@ -4,7 +4,7 @@
 #include "vector.h"
 #include "events.h"
 
-int *getprocess(FILE **fp, char **line, size_t *len)
+int parse_line(FILE **fp, char **line, size_t *len)
 {
     char *token;
     const char s[1] = " ";
@@ -71,7 +71,7 @@ int main(void)
     
     do
     {
-        pid = getprocess(&fp, &line, &len);
+        pid = parse_line(&fp, &line, &len);
         printf("%d\n", pid);
     }while(pid != -1);
 
