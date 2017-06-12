@@ -1,53 +1,54 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "cli.h"
 #include "vector.h"
 #include "events.h"
 
-static int command_error(FILE *fp, int num, char *msg)
-{
-	fscanf(fp, "%*[^;]");
-	fscanf(fp, ";");
-	fprintf(stderr, "Error: %s\n", msg);
-
-	if (num == EOF) {
-		return EOF;
-	} else {
-		return 1;
-	}
-}
-
 int run_command(FILE *fp)
 {
-	static char buffer[1024];
+	char line[256];
+	char token[64];
+	char rest[256];
 	int num;
 
-	num = fscanf(fp, "%s", buffer); // May read semicolon
-	if (num != 1) {
-		return command_error(fp, num, "unknown command");
-	}
-
-	if (strncmp(buffer, "quit", strlen("quit")) == 0) {
+	if (fgets(line, 256, fp) == NULL) {
 		return EOF;
 	}
 
-	if (strncmp(buffer, "load", strlen("load")) == 0) {
-		num = fscanf(fp, "%s", buffer); // May read semicolon
-		if (num != 1) {
-			return command_error(fp, num, "missing filename");
+	rest[0] = '\0';
+	num = sscanf(line, "%s %[^\n]", token, rest);
+	if (num < 1) {
+		fprintf(stderr, "Error: parse error\n");
+		return 1;
+	}
+	strcpy(line, rest);
+
+	if (strcmp(token, "quit") == 0) {
+		if (strlen(line) > 0) {
+			fprintf(stderr, "Error: unexpected \"%s\"\n", line);
+			return 1;
 		}
 
-		FILE *new_fp = fopen(buffer, "r");
+		return EOF;
+	}
+
+	if (strcmp(token, "load") == 0) {
+		if (strlen(line) == 0) {
+			fprintf(stderr, "Error: missing filename\n");
+			return 1;
+		}
+
+		FILE *new_fp = fopen(line, "r");
 		if (new_fp == NULL) {
-			return command_error(fp, num, "failed to open file");
+			fprintf(stderr, "Error: failed to open \"%s\"\n", line);
+			return 1;
 		}
 
 		while (run_command(new_fp) != EOF)
 			;
 
 		fclose(new_fp);
-		fscanf(fp, "%*[^;]");
-		fscanf(fp, ";");
 		return 0;
 	}
 
@@ -57,19 +58,37 @@ int run_command(FILE *fp)
 	int duration;
 	io_t *io = NULL;
 
-	name = malloc(strlen(buffer) + 1);
-	strcpy(name, buffer);
+	name = malloc(strlen(token) + 1);
+	strcpy(name, token);
 
-	num = fscanf(fp, "%d %d %d", &priority, &begin, &duration);
-	if (num != 3) {
+	rest[0] = '\0';
+	num = sscanf(line, "%d %d %d %[^\n]", &priority, &begin, &duration, rest);
+	if (num < 3) {
 		free(name);
-		return command_error(fp, num, "incorrect arguments");
+		fprintf(stderr, "Error: missing arguments\n");
+		return 1;
 	}
+	strcpy(line, rest);
 
-	while (fscanf(fp, " %[^,;],", buffer) == 1) {
+	for (;;) {
+		char type;
 		io_t new_io;
 
-		switch (buffer[0]) {
+		rest[0] = '\0';
+		num = sscanf(line, "%s %[^\n]", token, rest);
+		if (num < 1) {
+			break;
+		}
+		strcpy(line, rest);
+
+		rest[0] = '\0';
+		num = sscanf(token, "%c %[^\n]", &type, rest);
+		if (num < 1) {
+			break;
+		}
+		strcpy(token, rest);
+
+		switch (type) {
 		case 'A':
 			new_io.type = IO_A;
 			break;
@@ -79,21 +98,36 @@ int run_command(FILE *fp)
 		default:
 			free(name);
 			vec_free(io);
-			return command_error(fp, 0, "unknown io type");
+			fprintf(stderr, "Error: unknown IO type '%c'\n", type);
+			return 1;
 		}
 
-		int num = sscanf(&buffer[1], "%d", &new_io.begin);
-		if (num != 1) {
+		rest[0] = '\0';
+		num = sscanf(token, "%d %[^\n]", &new_io.begin, rest);
+		if (num < 1) {
 			free(name);
 			vec_free(io);
-			return command_error(fp, num, "expected number");
+			fprintf(stderr, "Error: expected number\n");
+			return 1;
+		}
+
+		if (strlen(rest) > 0) {
+			free(name);
+			vec_free(io);
+			fprintf(stderr, "Error: unexpected \"%s\"\n", rest);
+			return 1;
 		}
 
 		vec_append(&io, &new_io);
 	}
 
-	fscanf(fp, "%*[^;]"); // Should probably check rest of line
-	fscanf(fp, ";");
+	if (strlen(line) > 0) {
+		free(name);
+		vec_free(io);
+		fprintf(stderr, "Error: unexpected \"%s\"\n", line);
+		return 1;
+	}
+
 	create_proc(name, priority, begin, duration, io);
 	vec_free(io);
 	return 0;
