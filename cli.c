@@ -1,28 +1,46 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include "cli.h"
 #include "vector.h"
 #include "events.h"
+
+#define scan(str, expected, format, ...) scan_(str, expected, format " %[^\n]", __VA_ARGS__, str)
+
+static int scan_(char *str, int expected, const char *format, ...)
+{
+	va_list args;
+	int num;
+
+	va_start(args, format);
+	num = vsscanf(str, format, args);
+
+	if (num != expected + 1) {
+		str[0] = '\0';
+	} else {
+		num--;
+	}
+
+	va_end(args);
+	return num;
+}
 
 int run_command(FILE *fp)
 {
 	char line[256];
 	char token[64];
-	char rest[256];
 	int num;
 
 	if (fgets(line, 256, fp) == NULL) {
 		return EOF;
 	}
 
-	rest[0] = '\0';
-	num = sscanf(line, "%s %[^\n]", token, rest);
-	if (num < 1) {
+	num = scan(line, 1, "%s", token);
+	if (num != 1) {
 		fprintf(stderr, "Error: parse error\n");
 		return 1;
 	}
-	strcpy(line, rest);
 
 	if (strcmp(token, "quit") == 0) {
 		if (strlen(line) > 0) {
@@ -61,32 +79,26 @@ int run_command(FILE *fp)
 	name = malloc(strlen(token) + 1);
 	strcpy(name, token);
 
-	rest[0] = '\0';
-	num = sscanf(line, "%d %d %d %[^\n]", &priority, &begin, &duration, rest);
-	if (num < 3) {
+	num = scan(line, 3, "%d %d %d", &priority, &begin, &duration);
+	if (num != 3) {
 		free(name);
 		fprintf(stderr, "Error: missing arguments\n");
 		return 1;
 	}
-	strcpy(line, rest);
 
 	for (;;) {
 		char type;
 		io_t new_io;
 
-		rest[0] = '\0';
-		num = sscanf(line, "%s %[^\n]", token, rest);
-		if (num < 1) {
+		num = scan(line, 1, "%s", token);
+		if (num != 1) {
 			break;
 		}
-		strcpy(line, rest);
 
-		rest[0] = '\0';
-		num = sscanf(token, "%c %[^\n]", &type, rest);
-		if (num < 1) {
+		num = scan(token, 1, "%c", &type);
+		if (num != 1) {
 			break;
 		}
-		strcpy(token, rest);
 
 		switch (type) {
 		case 'A':
@@ -102,19 +114,18 @@ int run_command(FILE *fp)
 			return 1;
 		}
 
-		rest[0] = '\0';
-		num = sscanf(token, "%d %[^\n]", &new_io.begin, rest);
-		if (num < 1) {
+		num = scan(token, 1, "%d", &new_io.begin);
+		if (num != 1) {
 			free(name);
 			vec_free(io);
 			fprintf(stderr, "Error: expected number\n");
 			return 1;
 		}
 
-		if (strlen(rest) > 0) {
+		if (strlen(token) > 0) {
 			free(name);
 			vec_free(io);
-			fprintf(stderr, "Error: unexpected \"%s\"\n", rest);
+			fprintf(stderr, "Error: unexpected \"%s\"\n", token);
 			return 1;
 		}
 
