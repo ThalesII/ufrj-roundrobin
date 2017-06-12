@@ -97,22 +97,6 @@ event_t *next_events(void)
 
 	// Copy events
 
-	if (g_interrupt == next_time) {
-		event_t int_event = { EV_INTERRUPT, g_running, next_time };
-		vec_append(&events, &int_event);
-		g_interrupt = -1;
-	}
-
-	for (int i=0; i < vec_length(g_events);) {
-		if (g_events[i].time != next_time) {
-			i++;
-			continue;
-		}
-
-		vec_append(&events, &g_events[i]);
-		vec_remove(g_events, i);
-	}
-
 	for (int i=0; proc && i < vec_length(proc->events);) {
 		int event_time = g_time + proc->events[i].time - proc->time;
 
@@ -129,6 +113,22 @@ event_t *next_events(void)
 		event_t proc_event = { proc->events[i].type, proc->events[i].pid, event_time };
 		vec_append(&events, &proc_event);
 		vec_remove(proc->events, i);
+	}
+
+	if (g_interrupt == next_time && vec_length(events) == 0) {
+		event_t int_event = { EV_INTERRUPT, g_running, next_time };
+		vec_append(&events, &int_event);
+		g_interrupt = -1;
+	}
+
+	for (int i=0; i < vec_length(g_events);) {
+		if (g_events[i].time != next_time) {
+			i++;
+			continue;
+		}
+
+		vec_append(&events, &g_events[i]);
+		vec_remove(g_events, i);
 	}
 
 	// If there are no events, return `EV_NONE'
