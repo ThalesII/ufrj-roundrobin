@@ -4,105 +4,49 @@
 #include "vector.h"
 #include "events.h"
 
-//Vector of file states
-FILE **files;
-char **lines;
-size_t *lens;
-int *ids;
-
-//Open a file and append it on vector files
-void load_file(char *arq_name)
+int run_command(FILE *fp)
 {
-    FILE *fp = fopen(arq_name, "r");
-    if (fp == NULL)
-        exit(EXIT_FAILURE);
-    vec_append(&files, &fp);
+	static char buffer[1024];
 
-    char * line = NULL;
-    size_t len = 0;
-    int id = vec_length(files) - 1;
+	char *name;
+	int priority;
+	int begin;
+	int duration;
+	io_t *io = NULL;
 
-    vec_append(&lines, &line);
-    vec_append(&lens, &len);
-    vec_append(&ids, &id);
-}
+	int num = fscanf(fp, "%s %d %d %d ", buffer, &priority, &begin, &duration);
+	if (num != 4) {
+		return num;
+	}
 
-//Close file and free all vectors
-void close_files()
-{
-    for(int i=0; i<vec_length(files); i++){
-        fclose(files[i]);
-    }
-    vec_free(files);
-    vec_free(lines);
-    vec_free(lens);
-    vec_free(ids);
-    files = NULL;
-    lines = NULL;
-    lens = NULL;
-    ids = NULL;
-}
+	name = malloc(strlen(buffer) + 1);
+	strcpy(name, buffer);
 
-int parse_line(int id)
-{
-    char *token;
-    char io_letter;
-    char *name;
-    const char s[1] = " ";
+	while (fscanf(fp, "%[^,;], ", buffer) == 1) {
+		io_t new_io;
 
-    FILE  **fp = &files[id];
-    char  **line = &lines[id];
-    size_t *len = &lens[id];
+		switch (buffer[0]) {
+		case 'A':
+			new_io.type = IO_A;
+			break;
+		case 'B':
+			new_io.type = IO_B;
+		}
 
-   	int *vec = NULL;
-    int io_number;
+		int num = sscanf(&buffer[1], "%d", &new_io.begin);
+		if (num != 1) {
+			free(name);
+			vec_free(io);
+			return num;
+		}
 
-    if (getline(&(*line), &(*len), *fp) != -1) {
-    	int count = 1;
+		vec_append(&io, &new_io);
+	}
 
-        /* get first token */
-    	token = strtok(*line, s);
-
-    	/* get other tokens */
-    	while (token != NULL){
-    		int c;
-    		if (count == 1){
-    			name = token;
-    		}
-    		else if(count > 4){
-                sscanf(token, "%c%d", &io_letter, &c);
-    			io_number = io_letter-'A';
-    			vec_append(&vec, &io_number);
-    			vec_append(&vec, &c);
-    		}
-    		else{
-    			c = atoi(token);
-    			vec_append(&vec, &c);
-    		}
-    		count++;
-
-    		token = strtok(NULL, s);
-    	}
-    }else{
-        return -1;
-    }
-
-    int priority = vec[1];
-    int begin = vec[2];
-    int duration = vec[3];
-    io_t *io = NULL;
-
-    for (int i=3; i < vec_length(vec); i+=2) {
-        io_t new_io = { vec[i], vec[i+1] };
-        vec_append(&io, &new_io);
-    }
-
-    // for (int i=0; i < vec_length(vec); ++i) {
-    //     printf("%d ", vec[i]);
-    // }
-    // puts("");
-
-    return create_proc(name, priority, begin, duration, io);
+	fscanf(fp, "; ");
+	create_proc(name, priority, begin, duration, io);
+	vec_free(io);
+	return 0;
 }
 
 // Unit test
@@ -110,30 +54,15 @@ int parse_line(int id)
 #if 0
 int main(void)
 {
-    int pid;
-    load_file("test.in");
+	FILE *fp = fopen("test.in", "r");
+	int num = 0;
 
-    //Parser on first file
-    puts("Pids of processes on first file:");
-    do{
-        pid = parse_line(0);
-        printf("%d\n", pid);
-    }while(pid != -1);
-    puts("");
-    
-    close_files();
-    load_file("test2.in");
-    //Parser on second file
-    puts("Pids of processes on second file:");
-    do{
-        pid = parse_line(0);
-        printf("%d\n", pid);
-    }while(pid != -1);
-    puts("");
+	while (run_command(fp) != -1) {
+		num++;
+	}
 
-    close_files();
-
-
+	printf("%d\n", num);
+	fclose(fp);
 	return 0;
 }
 #endif
