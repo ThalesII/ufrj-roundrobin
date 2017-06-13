@@ -96,7 +96,7 @@ void run(void){
 	while(!quit){
 		inf_loop_avoider++;
 		quit = step();
-		if(inf_loop_avoider > 10){
+		if(inf_loop_avoider > MAX_ITERATIONS_LIMIT){
 			printf("ABORT\n");
 			exit(-1);
 		}
@@ -104,7 +104,7 @@ void run(void){
 }
 
 //Unit test
-#if 0
+#if 1
 int main(){
 	init_test();
 	printf("Created 3 processes\n");
