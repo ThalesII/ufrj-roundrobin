@@ -5,6 +5,7 @@
 #include "cli.h"
 #include "vector.h"
 #include "events.h"
+#include "round_robin.h"
 
 #define scan(str, expected, format, ...) scan_(str, expected, format " %[^\n]", __VA_ARGS__, str)
 
@@ -49,6 +50,24 @@ int run_command(FILE *fp)
 		}
 
 		return EOF;
+	}
+
+	if (strcmp(token, "step") == 0) {
+		if (strlen(line) > 0) {
+			fprintf(stderr, "Error: unexpected \"%s\"\n", line);
+			return 1;
+		}
+		step();
+		return 0;
+	}
+
+	if (strcmp(token, "continue") == 0 || strcmp(token, "run") == 0) {
+		if (strlen(line) > 0) {
+			fprintf(stderr, "Error: unexpected \"%s\"\n", line);
+			return 1;
+		}
+		run();
+		return 0;
 	}
 
 	if (strcmp(token, "load") == 0) {
