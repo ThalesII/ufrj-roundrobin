@@ -92,7 +92,7 @@ void run(void){
 }
 
 //Unit test
-#if 1
+#if 0
 int main(){
 	init_test();
 	printf("Created 3 processes\n");
