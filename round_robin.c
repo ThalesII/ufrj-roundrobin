@@ -23,7 +23,7 @@ int step(void){
 	events_count = vec_length(events);
 	time = events[0].time;
 	proc_info p;
-	printf("Received %d events at T = %d\n", events_count, time);
+	printf("\nReceived %d events at T = %d\n", events_count, time);
 	for(int i = 0; i < events_count; ++i){
 		switch(events[i].type){
 			case EV_NONE:
@@ -65,14 +65,14 @@ int step(void){
 				printf("  Something's wrong...");
 		}
 	}
-	print_heap(proc_heap);
+	// print_heap(proc_heap);
 	if(vec_length(proc_heap) > 0 && get_running() == -1){
 		proc_info next_proc = pop(proc_heap);
-		printf("Next Interrupt: P%d @ T = %d\n", next_proc.pid, time + interrupt_interval);
+		printf("Next Interrupt: P%d at T = %d\n", next_proc.pid, time + interrupt_interval);
 		set_running(next_proc.pid);
 		set_interrupt(time + interrupt_interval);
 	}
-	printf("QUEUE SIZE: %d\n", vec_length(proc_heap));
+	// printf("QUEUE SIZE: %d\n", vec_length(proc_heap));
 
 	return final_step;
 }
