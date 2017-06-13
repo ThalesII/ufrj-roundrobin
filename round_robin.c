@@ -18,6 +18,10 @@ void set_remaining_procs(int num_processes){
 	remaining_procs = num_processes;
 }
 
+int get_remaining_procs(){
+	return remaining_procs;
+}
+
 int step(void){
 	int final_step = 0;
 	int time = 0;
