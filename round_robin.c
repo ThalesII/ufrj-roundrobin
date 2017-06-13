@@ -6,20 +6,11 @@
 #include "heap.h"
 
 int interrupt_interval = 3;
-int remaining_procs = 3;
 proc_info *proc_heap = NULL;
 int proc_heap_count = 0;
 
 void set_interrupt_interval(int interval){
 	interrupt_interval = interval;
-}
-
-void set_remaining_procs(int num_processes){
-	remaining_procs = num_processes;
-}
-
-int get_remaining_procs(){
-	return remaining_procs;
 }
 
 int step(void){
@@ -51,12 +42,13 @@ int step(void){
 				printf("  Type: EV_PROCESS_END\n");
 				printf("  - PID: %d\n", events[i].pid);
 				set_running(-1);
-				remaining_procs--;
+				set_interrupt(-1);
 				break;
 			case EV_IO_BEGIN:
 				printf("  Type: EV_IO_BEGIN\n");
 				printf("  - PID: %d\n", events[i].pid);
 				set_running(-1);
+				set_interrupt(-1);
 				break;
 			case EV_IO_END:
 				printf("  Type: EV_IO_END\n");
@@ -86,9 +78,6 @@ int step(void){
 		set_interrupt(time + interrupt_interval);
 	}
 	printf("QUEUE SIZE: %d\n", proc_heap_count);
-	if(remaining_procs == 0){
-		set_interrupt(-1);
-	}
 
 	return final_step;
 }
