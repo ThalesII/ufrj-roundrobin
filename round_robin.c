@@ -7,7 +7,6 @@
 
 int interrupt_interval = 3;
 proc_info *proc_heap = NULL;
-int proc_heap_count = 0;
 
 void set_interrupt_interval(int interval){
 	interrupt_interval = interval;
@@ -36,7 +35,6 @@ int step(void){
 				printf("  - PID: %d\n", events[i].pid);
 				p = (proc_info){events[i].pid, get_info(events[i].pid).priority, time};
 				insert(&proc_heap, &p);
-				proc_heap_count++;
 				break;
 			case EV_PROCESS_END:
 				printf("  Type: EV_PROCESS_END\n");
@@ -55,7 +53,6 @@ int step(void){
 				printf("  - PID: %d\n", events[i].pid);
 				p = (proc_info){events[i].pid, get_info(events[i].pid).priority, time};
 				insert(&proc_heap, &p);
-				proc_heap_count++;
 				break;
 			case EV_INTERRUPT:
 				printf("  Type: EV_INTERRUPT\n");
@@ -63,7 +60,6 @@ int step(void){
 				set_running(-1);
 				p = (proc_info){events[i].pid, get_info(events[i].pid).priority, time};
 				insert(&proc_heap, &p);
-				proc_heap_count++;
 				break;
 			default:
 				printf("  Something's wrong...");
@@ -72,12 +68,11 @@ int step(void){
 	print_heap(proc_heap);
 	if(vec_length(proc_heap) > 0 && get_running() == -1){
 		proc_info next_proc = pop(proc_heap);
-		proc_heap_count--;
 		printf("Next Interrupt: P%d @ T = %d\n", next_proc.pid, time + interrupt_interval);
 		set_running(next_proc.pid);
 		set_interrupt(time + interrupt_interval);
 	}
-	printf("QUEUE SIZE: %d\n", proc_heap_count);
+	printf("QUEUE SIZE: %d\n", vec_length(proc_heap));
 
 	return final_step;
 }
